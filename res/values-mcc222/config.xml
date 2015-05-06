@@ -14,9 +14,6 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-
-<!--Allow recording for country: Italy-->
-<!--Legal precedent source: http://www.altalex.com/index.php?idnot=53369 -->
 <resources>
-
+    <bool name="call_recording_enabled">true</bool>
 </resources>

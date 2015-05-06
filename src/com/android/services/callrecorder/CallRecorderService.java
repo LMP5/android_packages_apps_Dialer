@@ -24,6 +24,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemProperties;
 import android.text.TextUtils;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.android.services.callrecorder.common.CallRecording;
@@ -50,6 +51,8 @@ public class CallRecorderService extends Service {
     private CallRecording mCurrentRecording = null;
 
     private static final String AUDIO_SOURCE_PROPERTY = "persist.call_recording.src";
+
+    private int mDefaultEncoder;
 
     private SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyMMdd_HHmmssSSS");
 
@@ -87,6 +90,7 @@ public class CallRecorderService extends Service {
     @Override
     public void onCreate() {
         if (DBG) Log.d(TAG, "Creating CallRecorderService");
+        mDefaultEncoder = getResources().getInteger(R.integer.call_recording_audio_encoder);
     }
 
     @Override
@@ -97,6 +101,26 @@ public class CallRecorderService extends Service {
     private int getAudioSource() {
         int defaultValue = getResources().getInteger(R.integer.call_recording_audio_source);
         return SystemProperties.getInt(AUDIO_SOURCE_PROPERTY, defaultValue);
+    }
+
+    private int getAudioFormat() {
+        int formatValue =  Settings.System.getInt(
+                getContentResolver(), Settings.System.CALL_RECORDING_FORMAT, mDefaultEncoder);
+        if (formatValue == 0){
+            return MediaRecorder.OutputFormat.AMR_NB;
+        } else {
+            return MediaRecorder.OutputFormat.MPEG_4;
+        }
+    }
+
+    private int getAudioEncoder() {
+        int formatValue =  Settings.System.getInt(
+                getContentResolver(), Settings.System.CALL_RECORDING_FORMAT, mDefaultEncoder);
+        if (formatValue == 0){
+            return MediaRecorder.AudioEncoder.AMR_NB;
+        } else {
+            return MediaRecorder.AudioEncoder.HE_AAC;
+        }
     }
 
     private synchronized boolean startRecordingInternal(File file) {
@@ -116,6 +140,8 @@ public class CallRecorderService extends Service {
             mMediaRecorder.setAudioSource(audioSource);
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
             mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+            mMediaRecorder.setOutputFormat(getAudioFormat());
+            mMediaRecorder.setAudioEncoder(getAudioEncoder());
         } catch (IllegalStateException e) {
             Log.w(TAG, "Error initializing media recorder", e);
             return false;
@@ -184,6 +210,13 @@ public class CallRecorderService extends Service {
             number = "unknown";
         }
         return number + "_" + timestamp + ".amr";
+
+        int audioFormat = getAudioFormat();
+        if (audioFormat == MediaRecorder.OutputFormat.AMR_NB){
+            return number + "_" + timestamp + ".amr";
+        } else {
+            return number + "_" + timestamp + ".m4a ";
+        }
     }
 
     public static boolean isEnabled(Context context) {

@@ -14,9 +14,6 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-
-<!--Allow recording for country: Finland-->
-<!--Legal precedent source: http://www.tietosuoja.fi/fi/index/ratkaisut/puheluidennauhoittaminen.html -->
 <resources>
-
+    <bool name="call_recording_enabled">true</bool>
 </resources>
