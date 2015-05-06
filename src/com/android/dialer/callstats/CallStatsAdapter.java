@@ -20,6 +20,9 @@ package com.android.dialer.callstats;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
+import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +40,7 @@ import com.android.dialer.calllog.ContactInfo;
 import com.android.dialer.calllog.ContactInfoHelper;
 import com.android.dialer.calllog.PhoneNumberDisplayHelper;
 import com.android.dialer.calllog.PhoneNumberUtilsWrapper;
+import com.android.contacts.common.util.PhoneNumberHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,6 +73,9 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
     private final CallLogAdapterHelper mAdapterHelper;
     private final CallStatsDetailHelper mCallStatsDetailHelper;
 
+    private final PhoneNumberDisplayHelper mPhoneNumberHelper;
+    private final ContactPhotoManager mContactPhotoManager;
+
     private ArrayList<CallStatsDetails> mAllItems;
     private CallStatsDetails mTotalItem;
     private Map<ContactInfo, CallStatsDetails> mInfoLookup;
@@ -78,8 +85,6 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
     private long mFilterTo;
     private boolean mSortByDuration;
 
-    private final ContactPhotoManager mContactPhotoManager;
-    private PhoneNumberDisplayHelper mPhoneNumberHelper;
 
     private final Comparator<CallStatsDetails> mDurationComparator = new Comparator<CallStatsDetails>() {
         @Override
@@ -113,7 +118,8 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
         mInfoLookup = new ConcurrentHashMap<ContactInfo, CallStatsDetails>();
 
         Resources resources = mContext.getResources();
-        mPhoneNumberHelper = new PhoneNumberDisplayHelper(resources);
+        mPhoneNumberHelper =
+                new PhoneNumberDisplayHelper(mContext, resources);
 
         final String currentCountryIso = GeoUtil.getCurrentCountryIso(mContext);
         final ContactInfoHelper contactInfoHelper =
@@ -122,8 +128,8 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
         mAdapterHelper = new CallLogAdapterHelper(mContext, this,
                 contactInfoHelper, mPhoneNumberHelper);
         mContactPhotoManager = ContactPhotoManager.getInstance(mContext);
-        mCallStatsDetailHelper = new CallStatsDetailHelper(resources,
-                new PhoneNumberUtilsWrapper());
+        mCallStatsDetailHelper = new CallStatsDetailHelper(mContext, resources,
+                new PhoneNumberUtilsWrapper(mContext));
     }
 
     public void updateData(Map<ContactInfo, CallStatsDetails> calls, long from, long to) {
@@ -135,11 +141,13 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
         mAllItems.clear();
         mTotalItem.reset();
 
+        PhoneAccountHandle accountHandle = getTelecomManager().getUserSelectedOutgoingPhoneAccount();
+
         for (Map.Entry<ContactInfo, CallStatsDetails> entry : calls.entrySet()) {
             final CallStatsDetails call = entry.getValue();
             mAllItems.add(call);
             mTotalItem.mergeWith(call);
-            mAdapterHelper.lookupContact(call.number, call.numberPresentation,
+            mAdapterHelper.lookupContact(accountHandle, call.number, call.numberPresentation,
                     call.countryIso, entry.getKey());
         }
     }
@@ -218,9 +226,13 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
         mCallStatsDetailHelper.setCallStatsDetails(views.callStatsDetailViews,
                 details, first, mTotalItem, mType, mSortByDuration);
 
+        final PhoneAccountHandle accountHandle =
+                getTelecomManager().getUserSelectedOutgoingPhoneAccount();
+
         String nameForDefaultImage = null;
         if (TextUtils.isEmpty(details.name)) {
-            nameForDefaultImage = mPhoneNumberHelper.getDisplayNumber(details.number,
+            nameForDefaultImage = mPhoneNumberHelper.getDisplayNumber(
+                    accountHandle, details.number,
                     details.numberPresentation, details.formattedNumber).toString();
         } else {
             nameForDefaultImage = details.name;
@@ -263,5 +275,9 @@ class CallStatsAdapter extends ArrayAdapter<CallStatsDetails>
         if (details != null) {
             details.updateFromInfo(updatedInfo);
         }
+    }
+
+    private TelecomManager getTelecomManager() {
+        return (TelecomManager) mContext.getSystemService(Context.TELECOM_SERVICE);
     }
 }
