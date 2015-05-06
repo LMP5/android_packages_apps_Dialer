@@ -138,6 +138,8 @@ public class CallRecorderService extends Service {
             int audioSource = getAudioSource();
             if (DBG) Log.d(TAG, "Creating media recorder with audio source " + audioSource);
             mMediaRecorder.setAudioSource(audioSource);
+            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
+            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
             mMediaRecorder.setOutputFormat(getAudioFormat());
             mMediaRecorder.setAudioEncoder(getAudioEncoder());
         } catch (IllegalStateException e) {
@@ -204,6 +206,10 @@ public class CallRecorderService extends Service {
 
     private String generateFilename(String number) {
         String timestamp = DATE_FORMAT.format(new Date());
+        if (TextUtils.isEmpty(number)) {
+            number = "unknown";
+        }
+        return number + "_" + timestamp + ".amr";
 
         int audioFormat = getAudioFormat();
         if (audioFormat == MediaRecorder.OutputFormat.AMR_NB){
