@@ -206,11 +206,6 @@ public class CallRecorderService extends Service {
 
     private String generateFilename(String number) {
         String timestamp = DATE_FORMAT.format(new Date());
-        if (TextUtils.isEmpty(number)) {
-            number = "unknown";
-        }
-        return number + "_" + timestamp + ".amr";
-
         int audioFormat = getAudioFormat();
         if (audioFormat == MediaRecorder.OutputFormat.AMR_NB){
             return number + "_" + timestamp + ".amr";
