@@ -138,10 +138,8 @@ public class CallRecorderService extends Service {
             int audioSource = getAudioSource();
             if (DBG) Log.d(TAG, "Creating media recorder with audio source " + audioSource);
             mMediaRecorder.setAudioSource(audioSource);
-            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
-            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
             mMediaRecorder.setOutputFormat(getAudioFormat());
-            mMediaRecorder.setAudioEncoder(getAudioEncoder());
+            mMediaRecorder.setAudioEncoder(getAudioFormat());
         } catch (IllegalStateException e) {
             Log.w(TAG, "Error initializing media recorder", e);
             return false;
